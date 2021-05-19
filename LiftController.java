@@ -34,12 +34,14 @@ public class LiftController{
 	JPanel buttonPanel;
 	JButton exteriorButton[][];
 	JButton interiorButton[][];
+	JButton alert[];
 	JLabel floorLabel[];
 	JLabel directionLabel[];
 	
 	public int state[];
 	public int floor[];
 	public int door[];
+	public boolean available[];
 	ArrayList<Process> queue[];
 	
 	public static int abs(int n) {
@@ -56,7 +58,7 @@ public class LiftController{
 		public void run() {
 			while(!queue[liftNo].isEmpty()) {
 				try {
-					Thread.sleep(1000);    // Ä£ÄâµçÌİÔËĞĞ
+					Thread.sleep(1000);    // æ¨¡æ‹Ÿç”µæ¢¯è¿è¡Œ
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -70,22 +72,22 @@ public class LiftController{
 					floor[liftNo] = nextFloor;
 					floorLabel[liftNo].setText("" + floor[liftNo]);
 					state[liftNo] = queue[liftNo].remove(0).direction;
-					directionLabel[liftNo].setText(state[liftNo] == UP ? "¡ø" : "¨‹");
+					directionLabel[liftNo].setText(state[liftNo] == UP ? "â–²" : "â–¼");
 					try {
-						Thread.sleep(3000);    // Ä£ÄâµçÌİÉÏÏÂ¿Í
+						Thread.sleep(3000);    // æ¨¡æ‹Ÿç”µæ¢¯ä¸Šä¸‹å®¢
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 					door[liftNo] = CLOSED;
-					floorLabel[liftNo].setForeground(Color.black);
+					floorLabel[liftNo].setForeground(available[liftNo] ? Color.black : Color.red);
 					if (!queue[liftNo].isEmpty()) {
-						if (queue[liftNo].get(0).floor == floor[liftNo]) {  // µ½´ï¶ÓÁĞÖĞ×î¸ß²ã»ò×îµÍ²ãµÄÇéĞÎ
+						if (queue[liftNo].get(0).floor == floor[liftNo]) {  // åˆ°è¾¾é˜Ÿåˆ—ä¸­æœ€é«˜å±‚æˆ–æœ€ä½å±‚çš„æƒ…å½¢
 							exteriorButton[queue[liftNo].get(0).floor][queue[liftNo].get(0).direction].setBackground(OFF);
 							queue[liftNo].remove(0);
 						}
 						if (!queue[liftNo].isEmpty()) {
 							state[liftNo] = queue[liftNo].get(0).floor > floor[liftNo] ? UP : DOWN;
-							directionLabel[liftNo].setText(state[liftNo] == UP ? "¡ø" : "¨‹");
+							directionLabel[liftNo].setText(state[liftNo] == UP ? "â–²" : "â–¼");
 						}
 					}
 				}
@@ -103,23 +105,26 @@ public class LiftController{
 		state = new int[NUM];
 		floor = new int[NUM];
 		door = new int[NUM];
+		available = new boolean[NUM];
 		queue = new ArrayList[NUM];
 		for (int i = 0; i < NUM; ++i) {
 			state[i] = IDLE;
 			floor[i] = 1;
 			door[i] = CLOSED;
 			queue[i] = new ArrayList<Process>();
+			available[i] = true;
 		}
 		frame = new JFrame("Lift Simulator");
 		
 		//Buttons
 		exteriorButton = new JButton[MAXFLOOR + 1][2];
 		interiorButton = new JButton[MAXFLOOR + 1][NUM];
+		alert = new JButton[NUM];
 		
 		for (int i = 0; i < MAXFLOOR + 1; ++i) {
-			exteriorButton[i][UP] = new JButton("¡ø");
+			exteriorButton[i][UP] = new JButton("â–²");
 			exteriorButton[i][UP].setBackground(OFF);
-			exteriorButton[i][DOWN] = new JButton("¨‹");
+			exteriorButton[i][DOWN] = new JButton("â–¼");
 			exteriorButton[i][DOWN].setBackground(OFF);
 		}
 		
@@ -131,27 +136,58 @@ public class LiftController{
         }
 		
 		buttonPanel = new JPanel();
-		buttonPanel.setLayout(new GridLayout(22,7,30,8));
+		buttonPanel.setLayout(new GridLayout(MAXFLOOR+3,7,30,8));
 		
 		floorLabel = new JLabel[NUM];
 		directionLabel = new JLabel[NUM];
 		for (int j = 0; j < NUM; ++j) {
 			floorLabel[j] = new JLabel(""+1,JLabel.CENTER);
 			floorLabel[j].setFont(new Font("Arial",Font.BOLD,20));
+			alert[j] = new JButton("Alert");
+			alert[j].setBackground(OFF);
 			directionLabel[j] = new JLabel("",JLabel.CENTER);
        	}
 		
-		buttonPanel.add(new JLabel("",JLabel.CENTER));
+		JLabel lb1 = new JLabel("æ•…éšœ",JLabel.CENTER);
+		lb1.setForeground(Color.red);
+		lb1.setFont(new Font("å¾®è½¯é›…é»‘",Font.BOLD,18));
+		JLabel lb2 = new JLabel("å¼€é—¨",JLabel.CENTER);
+		lb2.setForeground(Color.blue);
+		lb2.setFont(new Font("å¾®è½¯é›…é»‘",Font.BOLD,18));
+		
+		buttonPanel.add(lb1);
 		buttonPanel.add(new JLabel("",JLabel.CENTER));
 		for (int j = 0; j < NUM; ++j) {
 			buttonPanel.add(floorLabel[j]);
        	}
 		
-		buttonPanel.add(new JLabel("",JLabel.CENTER));
+		buttonPanel.add(lb2);
 		buttonPanel.add(new JLabel("",JLabel.CENTER));
 		for (int j = 0; j < NUM; ++j) {
 			buttonPanel.add(directionLabel[j]);
        	}
+		
+		buttonPanel.add(new JLabel("",JLabel.CENTER));
+		buttonPanel.add(new JLabel("",JLabel.CENTER));
+		for (int j = 0; j < NUM; ++j) {
+			buttonPanel.add(alert[j]);
+			final int J = j;
+			alert[J].addActionListener(
+					new ActionListener() {
+						public void actionPerformed(ActionEvent e) {
+							if (available[J] == true) {
+								available[J] = false;
+								alert[J].setBackground(ON);
+								floorLabel[J].setForeground(Color.red);
+							}
+							else {
+								available[J] = true;
+								alert[J].setBackground(OFF);
+								floorLabel[J].setForeground(Color.black);
+							}
+						}
+					});
+		}
 		
 		for (int i = MAXFLOOR; i > 0; --i) {
 			for (int j = 0; j < 2; ++j) {
@@ -160,8 +196,14 @@ public class LiftController{
 				exteriorButton[i][j].addActionListener(
 						new ActionListener() {
 							public void actionPerformed(ActionEvent e) {
-								exteriorButton[I][J].setBackground(ON);
-								allocateProcess(I, J);
+								boolean avail = false;
+								for (int i = 0; i < NUM; ++i) {
+									avail = avail || available[i];
+								}
+								if (avail) {
+									exteriorButton[I][J].setBackground(ON);
+									allocateProcess(I, J);
+								}
 							}
 						});
 	       	}
@@ -217,7 +259,7 @@ public class LiftController{
 						return wt;
 					}
 					else {
-						return 0;   // ÈÎÎñÒÑÔÚ¶ÓÁĞÖĞ
+						return 0;   // ä»»åŠ¡å·²åœ¨é˜Ÿåˆ—ä¸­
 					}
 				}
 				else if (flr < floor[liftNo] || (flr == floor[liftNo] && door[liftNo] == CLOSED)) {
@@ -240,7 +282,7 @@ public class LiftController{
 						return wt;
 					}
 					else {
-						return 0;   // ÈÎÎñÒÑÔÚ¶ÓÁĞÖĞ
+						return 0;   // ä»»åŠ¡å·²åœ¨é˜Ÿåˆ—ä¸­
 					}
 				}
 			}
@@ -262,7 +304,7 @@ public class LiftController{
 					return wt;
 				}
 				else {
-					return 0;   // ÈÎÎñÒÑÔÚ¶ÓÁĞÖĞ
+					return 0;   // ä»»åŠ¡å·²åœ¨é˜Ÿåˆ—ä¸­
 				}
 			}
 		}
@@ -285,7 +327,7 @@ public class LiftController{
 						return wt;
 					}
 					else {
-						return 0;   // ÈÎÎñÒÑÔÚ¶ÓÁĞÖĞ
+						return 0;   // ä»»åŠ¡å·²åœ¨é˜Ÿåˆ—ä¸­
 					}
 				}
 				else if (flr > floor[liftNo] ||(flr == floor[liftNo] && door[liftNo] == CLOSED)) {
@@ -308,7 +350,7 @@ public class LiftController{
 						return wt;
 					}
 					else {
-						return 0;   // ÈÎÎñÒÑÔÚ¶ÓÁĞÖĞ
+						return 0;   // ä»»åŠ¡å·²åœ¨é˜Ÿåˆ—ä¸­
 					}
 				}
 			}
@@ -330,17 +372,17 @@ public class LiftController{
 					return wt;
 				}
 				else {
-					return 0;   // ÈÎÎñÒÑÔÚ¶ÓÁĞÖĞ
+					return 0;   // ä»»åŠ¡å·²åœ¨é˜Ÿåˆ—ä¸­
 				}
 			}
 		}
-		return 0;    // µçÌİ¿ªÃÅ
+		return 0;    // ç”µæ¢¯å¼€é—¨
 	}
 
 	public void allocateProcess(int flr, int ptype) {   // ptype = up, down
-		int l = 0, minWaitingTime = getWaitingTime(0, flr, ptype);
-		for (int i = 1; i < NUM; ++i) {
-			if (getWaitingTime(i, flr, ptype) < minWaitingTime) {
+		int l = -1, minWaitingTime = Integer.MAX_VALUE;
+		for (int i = 0; i < NUM; ++i) {
+			if (available[i] && getWaitingTime(i, flr, ptype) < minWaitingTime) {
 				minWaitingTime = getWaitingTime(i, flr, ptype);
 				l = i;
 			}
@@ -351,7 +393,7 @@ public class LiftController{
 	public void addProcess(int liftNo, int flr, int ptype) {
 //		System.out.println("addProcess(liftNo="+liftNo+", flr="+flr+", ptype="+ptype);
 		if (state[liftNo] == IDLE) {     // ....
-			if (flr == floor[liftNo]) {  //°´ÏÂµ±Ç°²ã°´Å¥
+			if (flr == floor[liftNo]) {  //æŒ‰ä¸‹å½“å‰å±‚æŒ‰é’®
 				if (ptype == INTERIOR) {
 					interiorButton[flr][liftNo].setBackground(OFF);
 				}
@@ -367,7 +409,7 @@ public class LiftController{
 				else {
 					queue[liftNo].add(new Process(flr, ptype));
 				}
-				directionLabel[liftNo].setText("¡ø");
+				directionLabel[liftNo].setText("â–²");
 				LiftThread thrd = new LiftThread(liftNo);
 				thrd.start();
 			}
@@ -379,7 +421,7 @@ public class LiftController{
 				else {
 					queue[liftNo].add(new Process(flr, ptype));
 				}
-				directionLabel[liftNo].setText("¨‹");
+				directionLabel[liftNo].setText("â–¼");
 				LiftThread thrd = new LiftThread(liftNo);
 				thrd.start();
 			}
@@ -393,7 +435,7 @@ public class LiftController{
 						++i;
 					}
 					if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == UP)) {
-						queue[liftNo].add(i, new Process(flr, UP));  //²åÈë¶ÓÁĞ
+						queue[liftNo].add(i, new Process(flr, UP));  //æ’å…¥é˜Ÿåˆ—
 					}
 				}
 				else if (flr < floor[liftNo] || (flr == floor[liftNo] && door[liftNo] == CLOSED)) {
@@ -405,7 +447,7 @@ public class LiftController{
 					for (; i < queue[liftNo].size() && queue[liftNo].get(i).floor < flr; ++i)
 						;
 					if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == UP)) {
-						queue[liftNo].add(i, new Process(flr, UP));  //²åÈë¶ÓÁĞ
+						queue[liftNo].add(i, new Process(flr, UP));  //æ’å…¥é˜Ÿåˆ—
 					}
 				}
 				else {
@@ -419,7 +461,7 @@ public class LiftController{
 				for (; i < queue[liftNo].size() && queue[liftNo].get(i).direction == DOWN && queue[liftNo].get(i).floor > flr; ++i)
 					;
 				if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == DOWN)) {
-					queue[liftNo].add(i, new Process(flr, DOWN));  //²åÈë¶ÓÁĞ
+					queue[liftNo].add(i, new Process(flr, DOWN));  //æ’å…¥é˜Ÿåˆ—
 				}
 			}
 			else if (ptype == INTERIOR) {
@@ -428,7 +470,7 @@ public class LiftController{
 					for (; i < queue[liftNo].size() && queue[liftNo].get(i).direction == UP && queue[liftNo].get(i).floor < flr; ++i)
 						;
 					if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == UP)) {
-						queue[liftNo].add(i, new Process(flr, UP));  //²åÈë¶ÓÁĞ
+						queue[liftNo].add(i, new Process(flr, UP));  //æ’å…¥é˜Ÿåˆ—
 					}
 				}
 				else if (flr < floor[liftNo] || (flr == floor[liftNo] && door[liftNo] == CLOSED)) {
@@ -438,7 +480,7 @@ public class LiftController{
 					for (; i < queue[liftNo].size() && queue[liftNo].get(i).direction == DOWN && queue[liftNo].get(i).floor > flr; ++i)
 						;
 					if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == DOWN)) {
-						queue[liftNo].add(i, new Process(flr, DOWN));  //²åÈë¶ÓÁĞ
+						queue[liftNo].add(i, new Process(flr, DOWN));  //æ’å…¥é˜Ÿåˆ—
 					}
 				}
 				else {
@@ -454,7 +496,7 @@ public class LiftController{
 						++i;
 					}
 					if (i >= queue[liftNo].size() || (!(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == DOWN))) {
-						queue[liftNo].add(i, new Process(flr, DOWN));  //²åÈë¶ÓÁĞ
+						queue[liftNo].add(i, new Process(flr, DOWN));  //æ’å…¥é˜Ÿåˆ—
 					}
 				}
 				else if (flr > floor[liftNo] || (flr == floor[liftNo] && door[liftNo] == CLOSED)) {
@@ -466,7 +508,7 @@ public class LiftController{
 					for (; i < queue[liftNo].size() && queue[liftNo].get(i).floor > flr; ++i)
 						;
 					if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == DOWN)) {
-						queue[liftNo].add(i, new Process(flr, DOWN));  //²åÈë¶ÓÁĞ
+						queue[liftNo].add(i, new Process(flr, DOWN));  //æ’å…¥é˜Ÿåˆ—
 					}
 				}
 				else {
@@ -480,7 +522,7 @@ public class LiftController{
 				for (; i < queue[liftNo].size() && queue[liftNo].get(i).direction == UP && queue[liftNo].get(i).floor < flr; ++i)
 					;
 				if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == UP)) {
-					queue[liftNo].add(i, new Process(flr, UP));  //²åÈë¶ÓÁĞ
+					queue[liftNo].add(i, new Process(flr, UP));  //æ’å…¥é˜Ÿåˆ—
 				}
 			}
 			else if (ptype == INTERIOR) {
@@ -489,7 +531,7 @@ public class LiftController{
 					for (; i < queue[liftNo].size() && queue[liftNo].get(i).direction == DOWN && queue[liftNo].get(i).floor > flr; ++i)
 						;
 					if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == DOWN)) {
-						queue[liftNo].add(i, new Process(flr, DOWN));  //²åÈë¶ÓÁĞ
+						queue[liftNo].add(i, new Process(flr, DOWN));  //æ’å…¥é˜Ÿåˆ—
 					}
 				}
 				else if (flr > floor[liftNo] || (flr == floor[liftNo] && door[liftNo] == CLOSED)) {
@@ -499,7 +541,7 @@ public class LiftController{
 					for (; i < queue[liftNo].size() && queue[liftNo].get(i).direction == UP && queue[liftNo].get(i).floor < flr; ++i)
 						;
 					if (i >= queue[liftNo].size() || !(queue[liftNo].get(i).floor == flr && queue[liftNo].get(i).direction == UP)) {
-						queue[liftNo].add(i, new Process(flr, UP));  //²åÈë¶ÓÁĞ
+						queue[liftNo].add(i, new Process(flr, UP));  //æ’å…¥é˜Ÿåˆ—
 					}
 				}
 				else {
